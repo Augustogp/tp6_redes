@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+        app: mongo
+  serviceName: mongo-svc
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - env:
+        - name: "MONGO_INITDB_ROOT_USERNAME"
+          value: "admin"
+        - name: "MONGO_INITDB_ROOT_PASSWORD"
+          value: "admin"
+        name: mongo
+        image: mongo
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 27017
+          name: mongo
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /data/db
+          name: www
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: www
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 500Mi
+        volumeMode: Filesystem
+        storageClassName: "microk8s-hostpath"
+---
+apiVersion: v1
+kind: Service
+metadata:
+    labels:
+        app: mongo
+    name: mongo-svc
+spec:
+    ports:
+    - name: mongo
+      port: 27017
+      protocol: TCP
+      targetPort: 27017
+    selector:
+      app: mongo
